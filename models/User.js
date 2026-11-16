@@ -1,0 +1,20 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['owner', 'staff_manager', 'staff_waiter', 'staff_kitchen'], required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // for staff, to know which owner they belong to
+  branchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }], // optional restricted access for staff
+  resetPasswordToken: { type: String },
+  resetPasswordExpire: { type: Date }
+}, { timestamps: true });
+
+userSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
+module.exports = mongoose.model('User', userSchema);
